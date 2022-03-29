@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<flow name="patch-leave-Flow" doc:id="fa6e60a3-6a76-47d4-958c-2cb38e31dc5d" >
+		<set-variable value="#[payload reduce($)]" doc:name="Storing the payload which it is coming from postman body and converting array to object" doc:id="99312355-414e-4a6a-98d5-b67c57723811" variableName="actualpayload" />
+		<ee:transform doc:name="Storing the details of what sapi nedded" doc:id="422574f1-706e-45d3-8f12-6d295c8f3fa2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var a = vars.a.employeeId
+var b = vars.a.leaveType
+---
+{
+	"query": "SELECT employeeId__c,Id,leaveAvailable__c,leaveBooked__c,leaveid__c,leaveType__c,Name,totalLeaves__c FROM leaveduplicate__c WHERE employeeId__c = " ++ "'" ++ a ++ "'" ++ "and leaveType__c = " ++ "'" ++ b ++ "'" 
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="queryParams" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"soqlWhereClause" : "employeeId__c = '" ++ (payload.employeeId[0]) ++ "' and leaveType__c = '" ++ (payload.leaveType[0]) ++ "'" default {}
+}
+]]></ee:set-variable>
+				<ee:set-variable variableName="method" ><![CDATA['GET']]></ee:set-variable>
+				<ee:set-variable variableName="path" ><![CDATA['${system.path.leavepath.get}']]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="60aeb960-76c7-4e3d-9d4e-093214c76306" >
+			<when expression='#[((vars.actualpayload.leaveType == "Sick") or (vars.actualpayload.leaveType == "Casual") or (vars.actualpayload.leaveType == "Privileged"))]' >
+				<flow-ref doc:name="Refferenced to http request" doc:id="2a605891-6b9f-48e5-a6fd-6cfc1b604fed" name="salesforce-sys-api-request"/>
+				<choice doc:name="Choice" doc:id="58d8c275-97e5-4f57-b08a-7850484984be">
+					<when expression="#[sizeOf(payload)&gt;0]">
+						<ee:transform doc:name="Converting array to object" doc:id="9f9e1ae0-3662-4d62-9699-6ef3d0dd9e64">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload reduce($)]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+						<ee:transform doc:name="Checking leaves are available or not" doc:id="e4a95fd6-e6ae-4f46-96e2-59bf45ee0bc8">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var a = vars.a.leaveType
+var b = vars.a."no.ofLeaves" as Number
+---
+if(payload.leaveAvailable__c >= b)
+{
+	employeeId: payload.employeeId__c,
+    leaveBooked: ((payload.leaveBooked__c) + (b)) as String,
+    totalLeaves: payload.totalLeaves__c,
+    leaveAvailable: ((payload.leaveAvailable__c) - (b)) as String,
+    Id: payload.Id,
+    leaveType: payload.leaveType__c,
+    leaveid: payload.leaveid__c,
+    employeeName: payload.Name
+}
+else 
+{
+   "message": "there is no sufficient leave balance for you" 
+}
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+						<set-variable value="#[payload]" doc:name="Storing the modified data" doc:id="9be2ec80-36eb-4197-ae41-86cb81504799" variableName="beforeupdate" />
+						<ee:transform doc:name="Storing the details of what sapi nedded" doc:id="4827a63c-f6ef-479e-bc41-fb141d7fa518">
+							<ee:message>
+								<ee:set-payload><![CDATA[[vars.beforeupdate]]]></ee:set-payload>
+							</ee:message>
+							<ee:variables >
+								<ee:set-variable variableName="path" ><![CDATA['${system.path.leavepath.patch}'
+]]></ee:set-variable>
+								<ee:set-variable variableName="method" ><![CDATA['PATCH']]></ee:set-variable>
+								<ee:set-variable variableName="uriParams" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	'id': payload.employeeId
+}]]></ee:set-variable>
+							</ee:variables>
+						</ee:transform>
+						<flow-ref doc:name="Referenced to http request" doc:id="3bbb6257-d594-4dc2-b2e5-452b7fe756e2" name="salesforce-sys-api-request"/>
+						<ee:transform doc:name="It will display how many leaves are remaining" doc:id="47852d38-ca80-418c-8d84-fba015823605">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	leaveBooked: vars.beforeupdate.leaveBooked,
+	leaveAvailable: vars.beforeupdate.leaveAvailable,
+	totalLeaves: vars.beforeupdate.totalLeaves,
+	leaveType: vars.beforeupdate.leaveType
+}]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					</when>
+					<otherwise>
+						<raise-error doc:name="Raise error" doc:id="b8ce0580-19e3-4742-8c06-8d3f5727dc46" type="NO:USER" description='#[" there is no record on this employeeId  " ++ vars.a.employeeId as String]' />
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="If given leavetype is not valid,it will display this message" doc:id="d252b319-f2a3-46ed-8965-9e4d18541295" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "These kind of " ++ vars.actualpayload.leaveType as String ++ " leaveType is not available for you"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="cc7ca78a-ac97-44a7-b04b-b4614ad25af9" type="NO:USER">
+				<set-payload value="#[error.description]" doc:name="If no employeeId is present it will display this message" doc:id="63fba032-0c3f-483d-9888-a37ab5215aac" />
+			</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="eb236cef-894d-4246-bb7b-50c66a44b3ac" >
+				<set-payload value="#[payload.message]" doc:name="If leave availability is less than no.of leaves, it will display this message" doc:id="1e030160-948f-4f54-b53f-3122b09d3450" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="post-leave-flow" doc:id="8076a7c9-8235-456b-a679-a67babe4aee1" >
+		<set-variable value="#[payload]" doc:name="Storing the payload which it is coming from postman body" doc:id="290d205f-98fa-4cfe-b645-801df86a7eab" variableName="actualpayload"/>
+		<choice doc:name="Choice" doc:id="1cb8500d-687a-48e2-9177-79bbb455a9d3" >
+			<when expression="#[sizeOf(payload)&gt;1]">
+				<ee:transform doc:name="Storing the details of what sapi nedded" doc:id="f77c1744-fc39-4ee6-9623-e376babfb572">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var a = vars.actualpayload.employeeId[0] 
+---
+{
+	'query': " SELECT employeeId__c,Id,leaveAvailable__c,leaveBooked__c,leaveid__c,leaveType__c,Name,totalLeaves__c FROM leaveduplicate__c WHERE employeeId__c = '" ++ a ++"'"  
+}]]></ee:set-payload>
+			</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="method" ><![CDATA['GET']]></ee:set-variable>
+						<ee:set-variable variableName="path" ><![CDATA['${system.path.leavepath.getbyid}']]></ee:set-variable>
+						<ee:set-variable variableName="uriParams" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	'id': vars.actualpayload.employeeId[0]  default {}
+}]]></ee:set-variable>
+					</ee:variables>
+		</ee:transform>
+				<flow-ref doc:name="Referenced to http request" doc:id="e3e38ed2-0e40-45fc-a1f0-75bb51b5a423" name="salesforce-sys-api-request"/>
+				<set-variable value="#[payload]" doc:name="afterquery" doc:id="c3742521-4095-4989-943c-a005a4af5b36" variableName="afterquery" />
+				<set-payload value="#[vars.actualpayload]" doc:name="payload from postman body" doc:id="ac201b7d-5f24-4aed-8d2c-4d7131203338" />
+				<foreach doc:name="For Each" doc:id="83c43baa-b137-44c8-8e38-b760f187095a">
+					<choice doc:name="Choice" doc:id="dc1166c6-e54a-4a09-ba4c-22ceda6f0193">
+			<when expression="#[((vars.afterquery.leaveType__c ) contains (payload.leaveType ))]">
+					<ee:transform doc:name="Leavetype is already exists,it will display this message" doc:id="75bd01b2-a7ef-435b-9120-b4efc53bffdd">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "already these " ++ payload.leaveType as String ++ " leavetype is exist on these employeeId " ++ payload.employeeId as String 
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+					<set-variable value="#[(vars.a default []) + payload.message]" doc:name="Storing the message which is coming from beside Transform message" doc:id="7f8ab9c1-1a6b-4c74-901d-29acf953f86c" variableName="a" />
+			</when>
+				<otherwise>
+				<set-payload value="#[[payload]]" doc:name="payload from postman body and converting the payload object into array" doc:id="d1e06e37-74b5-454a-b1a3-629f372a7456" />
+				<ee:transform doc:name="Storing the details of what sapi nedded" doc:id="2075b598-bb25-444e-9f07-57dd7a1757ee">
+								<ee:message>
+									<ee:set-payload><![CDATA[payload]]></ee:set-payload>
+								</ee:message>
+								<ee:variables >
+									<ee:set-variable variableName="path" ><![CDATA['${system.path.leavepath.post}']]></ee:set-variable>
+									<ee:set-variable variableName="method" ><![CDATA['POST']]></ee:set-variable>
+								</ee:variables>
+							</ee:transform>
+							<flow-ref doc:name="Referenced to http request" doc:id="ffab3a05-51ce-4c32-8390-7c86c1653f44" name="salesforce-sys-api-request"/>
+					<ee:transform doc:name="It will store the payload which it is coming from sapi" doc:id="b8b9094b-1985-4d52-adb3-1e84c1d9ec96">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+							<set-variable value="#[(vars.a default []) + payload]" doc:name="Storing the message which is coming from beside Transform message" doc:id="b2744f07-01be-4d5a-b441-51e80c755e40" variableName="a" />
+			</otherwise>
+		</choice>
+				</foreach>
+				<ee:transform doc:name="Transform Message" doc:id="65a304e4-416b-4f9e-a1e7-4d3b4b918e06">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"actualpayload": vars.a
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<otherwise >
+				<flow-ref doc:name="Flow Reference" doc:id="a8ff5c08-a375-4c09-96a3-0480bdd7c2d4" name="getById-leave-Flow1"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="getById-leave-Flow1" doc:id="b524d11c-5feb-42e6-aec5-770f1b4c37fb" >
+		<set-variable value="#[payload reduce($)]" doc:name="Storing the payload which it is coming from postman body and converting array to object" doc:id="991812bb-1a62-4482-83e7-a9dc2c404118" variableName="actualpayload"/>
+		<ee:transform doc:name="Storing the details of what sapi nedded" doc:id="c927ea0e-960c-4a5c-be1b-c7f7f83e9040" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var a = vars.actualpayload.employeeId
+---
+{
+	"query": " SELECT employeeId__c,Id,leaveAvailable__c,leaveBooked__c,leaveid__c,leaveType__c,Name,totalLeaves__c FROM leaveduplicate__c WHERE employeeId__c = '" ++ a ++"'" 
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="method" ><![CDATA['GET']]></ee:set-variable>
+				<ee:set-variable variableName="path" ><![CDATA['${system.path.leavepath.getbyid}']]></ee:set-variable>
+				<ee:set-variable variableName="uriParams" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	'id': vars.actualpayload.employeeId default {}
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="Referenced to http request" doc:id="200173ef-fb54-4b03-9a46-c85ed29dee4a" name="salesforce-sys-api-request"/>
+		<ee:transform doc:name="It will store the payload which it is coming from sapi" doc:id="b59d4211-e6ba-4d31-b669-e302d7331a97" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload ]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="32364aa8-508e-4c81-80b1-451f59ef9d40" >
+			<when expression="#[((payload.leaveType__c) contains (vars.actualpayload.leaveType))]">
+				<ee:transform doc:name="Leavetype is already exists,it will display this message" doc:id="ed9b8f69-f46e-4f01-bc35-ad87c67e6da3" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "already these " ++ vars.actualpayload.leaveType as String ++ " leavetype is exist on these employeeId " ++ vars.actualpayload.employeeId as String 
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<set-payload value="#[[vars.actualpayload]]" doc:name="payload from postman body and converting the payload object into array" doc:id="f768b696-f765-4b8e-aab7-e79f3106f8be" />
+				<ee:transform doc:name="Storing the details of what sapi nedded" doc:id="0dd9bec2-8757-49ab-b825-90a6326d091c">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="method" ><![CDATA['POST']]></ee:set-variable>
+						<ee:set-variable variableName="path" ><![CDATA['${system.path.leavepath.post}']]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="Referenced to http request" doc:id="40cd29c4-80c3-4728-9641-16c91c817e94" name="salesforce-sys-api-request"/>
+				<ee:transform doc:name="It will store the payload which it is coming from sapi" doc:id="9c6055f0-13ad-4aa1-98b0-9e3a7fff89b6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

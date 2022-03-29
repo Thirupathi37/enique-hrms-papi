@@ -1,0 +1,79 @@
+#%RAML 1.0
+title: enique-hrms-papi
+baseUri: https://anypoint.mulesoft.com/mocking/api/v1/sources/vcs/projects/4d031359-a699-47e2-a734-e5cbef581fd7/ #
+
+types:
+  applicant: !include datatype/dataType.raml
+  submitattendance: !include datatype/attendanceDataType.raml
+  leave: !include ../api/datatype/leavesdataType.raml
+
+/v1:
+ /papi:
+  /applicant:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              type: applicant
+              example: !include example/example.raml
+    post:
+      body:
+        application/json:
+          type: applicant
+          example: !include example/example.raml
+      responses:
+        201:
+          body:
+                application/json:
+                      example:
+                        {"message": "inserted Successfully"}    
+    patch:
+      body:
+         application/json:
+          type: applicant
+          example: !include example/example.raml
+      responses:
+        200:
+          body:
+            application/json:
+              example:
+                 { "message" : "updated successfully"}
+  /submitattendance:
+    post:
+      body:
+         application/json:
+          type: submitattendance[]
+          example: !include example\employeeExample\createexample.json
+      responses:
+       201:
+          body:
+                application/json:
+                      example:
+                               !include example\employeeExample\postexample.json
+  /leave:                          
+      post: 
+       body:
+        application/json:
+          type: leave[]
+          example: !include ../api/example/leaves/create-leave-request.json
+       responses:
+        201:
+          body:
+            application/json:
+              example: !include ../api/example/leaves/post-leave-response.json
+      /{id}:
+        patch: 
+         body:
+          application/json:
+           type: leave[]
+           example: !include ../api/example/leaves/create-leave-request.json
+         responses:
+          201:
+           body:
+            application/json:
+              example: !include ../api/example/leaves/patch-leave-response.json
+
+                
+                      
+                

@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_22f4c089_b74a_4ee2_96c4_e55689d11331_Output_Variables_totalLoggedInTime = Any
+

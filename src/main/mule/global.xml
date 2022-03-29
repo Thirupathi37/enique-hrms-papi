@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:google-sheets="http://www.mulesoft.org/schema/mule/google-sheets" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/google-sheets http://www.mulesoft.org/schema/mule/google-sheets/current/mule-google-sheets.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<http:listener-config name="enique-hrms-papi-httpListenerConfig" doc:name="HTTP Listener config" doc:id="e501c9da-9961-4ca7-bc7c-9281422491d8" >
+		<http:listener-connection host="localhost" port="${http.port}" />
+	</http:listener-config>
+	<google-sheets:config name="Google_Sheets_Config" doc:name="Google Sheets Config" doc:id="8eedb73b-9441-4d40-b5f9-f9a76d76414b" >
+		<google-sheets:oauth-2-0-connection >
+			<google-sheets:oauth-authorization-code consumerKey="${gsheets.clientid}" consumerSecret="${gsheets.clientsecret}"/>
+			<google-sheets:oauth-callback-config listenerConfig="enique-hrms-papi-httpListenerConfig" callbackPath="/callback" authorizePath="/login" />
+		</google-sheets:oauth-2-0-connection>
+	</google-sheets:config>
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="91cdd499-3d6f-484e-99ec-77fcfbc81dc5" >
+		<email:smtp-connection host="${send1.host}" user="${send1.username}" password="${send1.password}" port="${send1.port}" connectionTimeout="50">
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<email:imap-config name="Email_IMAP" doc:name="Email IMAP" doc:id="da8238ed-77c3-471f-aef0-79b778ecd5c4" >
+		<email:imaps-connection host="${onnewmessage.host}" user="${onnewmessage.username}" password="${onnewmessage.password}" port="${onnewmessage.port}" connectionTimeout="50">
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+			<email:properties >
+				<email:property key="mail.imap.ssl.enable" value="true" />
+			</email:properties>
+		</email:imaps-connection>
+	</email:imap-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="0a60cfd6-5bbd-41ee-9259-35b115a41932" file="Development-properties.yaml" />
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="50aac5e4-5a8c-40b4-8b34-48474ce37ef0" />
+	<apikit:config outboundHeadersMapName="outboundHeadersMapName" httpStatusVarName="httpStatus" doc:name="Router" doc:id="100796a2-f32a-4a70-96e1-2f1086fabf43" name="enique-hrms-papi-config" api="enique-hrms-papi.raml" >
+	<apikit:flow-mappings>
+			<apikit:flow-mapping resource="/v1/papi/applicant" action="get" flow-ref="get-details-from-googleSheet-flow" />
+			<apikit:flow-mapping resource="/v1/papi/applicant" action="post" flow-ref="post-email-flow" />
+			<apikit:flow-mapping resource="/v1/papi/submitattendance" action="post" flow-ref="timeLogPostFlow" />
+			<apikit:flow-mapping resource="/v1/papi/leave/{id}" action="patch" flow-ref="patch-leave-Flow" />
+			<apikit:flow-mapping resource="/v1/papi/leave" action="post" flow-ref="post-leave-flow" />
+		</apikit:flow-mappings>
+	</apikit:config>
+	<email:smtp-config name="EmailForTimeLog" doc:name="Email SMTP" doc:id="0bcd9631-2099-4049-a562-c50cf47ae2c0" >
+		<email:smtp-connection host="${send3.host}" port="${send3.port}" user="${send3.username}" password="${send3.password}" />
+	</email:smtp-config>
+</mule>

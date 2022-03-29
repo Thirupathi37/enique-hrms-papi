@@ -1,0 +1,55 @@
+http:
+ port: "8081"
+ 
+send1:
+ fromaddress: "asamohanlakshman@gmail.com"
+ toaddress: "eniquehrms@gmail.com"
+ username: "asamohanlakshman@gmail.com"
+ password: "9966653004"
+ host: "smtp.gmail.com"
+ port: "587"
+
+send3:
+ fromaddress: "eniquehrms@gmail.com"
+ username: "eniquehrms@gmail.com"
+ password: "Hrmsproject123"
+ host: "smtp.gmail.com"
+ port: "587"
+  
+send2:
+ toaddress: "asamohanlakshman@gmail.com"
+ 
+
+onnewmessage:
+ host: "imap.gmail.com"
+ port: "993"
+ username: "eniquehrms@gmail.com"
+ password: "hrmsproject123"
+
+gsheets:
+ clientid: "701273897979-8d1cnl9nhkggs6q8grqsb15hjdgop7ps.apps.googleusercontent.com"
+ clientsecret: "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"
+ sheetid: "1Ohx6AQyC5umVSKlHlBSc8RLpiYcCy5qCdupaeMfmRTs"
+
+salesforce:
+ username: "eniquehrms@gmail.com"
+ password: "hrmsproject123"
+ token: "4EIhuaRSKFDd2V2oiodz5b0D"
+ 
+ 
+system:
+ host: "localhost"
+ port: "8082"
+ basepath: "/api/v1/sapi"
+ path:
+  timelog:
+   sqlwhereClause: "/attendance"
+   attendanceDetails: "/attendance/{id}"
+   employeeDetails: "/employee"
+   applicant: "/applicant/{id}"
+   postapplicant: "/applicant"
+  leavepath:
+     getbyid: "/leave/{id}"
+     get: "/leave"
+     patch: "/leave/{id}"
+     post: "/leave"

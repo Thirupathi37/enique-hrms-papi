@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:google-sheets="http://www.mulesoft.org/schema/mule/google-sheets" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/google-sheets http://www.mulesoft.org/schema/mule/google-sheets/current/mule-google-sheets.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<flow name="post-email-flow" doc:id="6d013a4f-874c-4c8c-a49c-8d7bafedaffe">
+		<email:send doc:name="Send" doc:id="239b5500-4540-4cfe-b075-2049bf578249" fromAddress='${send1.fromaddress}' subject='#["New Applicant"]' config-ref="Email_SMTP">
+			<email:to-addresses>
+				<email:to-address value="${send1.toaddress}" />
+			</email:to-addresses>
+			<email:body contentType="text/plain" />
+		</email:send>
+		<ee:transform doc:name="Actual PAYLOAD" doc:id="831d96af-6363-4796-83b9-da037abea95d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="on-newEmail-flow" doc:id="b3430e0d-54d9-4cfe-b55b-0cc733bd4d52" initialState="started">
+		<email:listener-imap doc:name="On New Email - IMAP" doc:id="d2aa393d-6fdd-4628-acf5-94a462abe10e" config-ref="Email_IMAP">
+			<scheduling-strategy>
+				<fixed-frequency frequency="1" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</email:listener-imap>
+		<ee:transform doc:name="Reading PAYLOAD STRING to JSON" doc:id="b562afc4-f442-48fb-b0ef-603b1d575bb7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+read(payload.body, "application/json")]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Filtering by ApplicantType if fresher or experienced" doc:id="6b7e447e-774b-4dd6-9b26-d0689bf69753" >
+			<when expression='#[payload.applicantType == "fresher"]'>
+				<ee:transform doc:name="If ApplicantType is Fresher" doc:id="f07b2930-d352-430c-9bcd-9906234aeb45" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+"range":"Sheet1",
+"majorDimension":"ROWS",
+"values" : [
+	[
+		payload.applicantId default "null",
+		payload.applicantName default "null",
+		payload.contactNumber default "null",
+		payload.emailId default "null",
+		payload.dateOfApplication default "null",
+		payload.jobId default "null",
+		payload.applicantType default "null",
+		payload.applicationStatus default "null",
+		payload.onlineTestStatus default "null",
+		payload.onlineTestEvaluation default "null",
+		payload.score default "null",
+		payload.locationPreference1 default "null",
+		payload.locationPreference2 default "null",
+		payload.locationPreference3 default "null",
+		payload.currentLocation default "null",
+		payload.qualification default "null",
+		payload.collegeName default "null",
+		payload.passOutYear default "null",
+		payload.programmingSkills default "null",
+		payload.experience default "null",
+		payload.designation default "null",
+		payload.expInCC default "null",
+		payload.noticePeriod default "null",
+		payload.openForRelocation default "null",
+		payload.currentSalary default "null",
+		payload.expectedSalary default "null",
+	    payload.currentRound default "null",
+		payload.interviewPanelist default "null",
+		payload.comments default "null"
+	]		
+ ]}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="If ApplicantType is Experienced" doc:id="871df935-1035-43dc-8032-eccffbadd746" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+"range":"Sheet1",
+"majorDimension":"ROWS",
+"values" : [
+	[
+		payload.applicantId default "null",
+		payload.applicantName default "null",
+		payload.contactNumber default "null",
+		payload.emailId default "null",
+		payload.dateOfApplication default "null",
+		payload.jobId default "null",
+		payload.applicantType default "null",
+		payload.applicationStatus default "null",
+		payload.onlineTestStatus default "null",
+		payload.onlineTestEvaluation default "null",
+		payload.score default "null",
+		payload.locationPreference1 default "null",
+		payload.locationPreference2 default "null",
+		payload.locationPreference3 default "null",
+		payload.currentLocation default "null",
+		payload.qualification default "null",
+		payload.collegeName default "null",
+		payload.passOutYear default "null",
+		payload.programmingSkills default "null",
+		payload.experience default "null",
+		payload.designation default "null",
+		payload.expInCC default "null",
+		payload.noticePeriod default "null",
+		payload.openForRelocation default "null",
+		payload.currentSalary default "null",
+		payload.expectedSalary default "null",
+	    payload.currentRound default "null",
+		payload.interviewPanelist default "null",
+		payload.comments default "null"
+	]		
+ ]}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<set-variable value="#[payload]" doc:name="Taking Actual Payload as Variable actualpayload" doc:id="24811d3b-332d-4bcc-838c-c8250779ce33" variableName="actualpayload"/>
+		<ee:transform doc:name="Taking ONLY VALUES from ACTUAL PAYLOAD" doc:id="2dc230b5-3dd5-4ab0-970c-fa16af1e64f2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.actualpayload.values map{
+    "applicantId": $[0],
+    "applicantName": $[1],
+    "contactNumber": $[2],
+    "emailId": $[3],
+    "dateOfApplication": $[4],
+    "jobId": $[5],
+    "applicantType": $[6],
+    "applicationStatus": $[7],
+    "onlineTestStatus": $[8],
+    "onlineTestEvaluation": $[9],
+    "score": $[10],
+    "locationPreference1": $[11],
+    "locationPreference2": $[12],
+    "locationPreference3": $[13],
+    "currentLocation": $[14],
+    "qualification": $[15],
+    "collegeName": $[16],
+    "passOutYear": $[17],
+    "programmingSkills": $[18],
+    "experience": $[19],
+    "designation": $[20],
+    "expInCC": $[21],
+    "noticePeriod": $[22],
+    "openForRelocation": $[23],
+    "currentSalary": $[24],
+    "expectedSalary": $[25],
+    "currentRound": $[26],
+    "interviewPanelist": $[27],
+    "comments": $[28]
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[{&#10;	emailid: payload.emailId,&#10;	phone: payload.contactNumber,&#10;	name: payload.applicantName&#10;}]" doc:name="Taking value of emailID,ContactNumber,applicantName from PAYLOAD" doc:id="7d1d61ab-f69f-4b0c-ae56-6c3204418b17" variableName="filteredpayload"/>
+		<google-sheets:get-spreadsheets-values-by-spreadsheet-id-range doc:name="Get Spreadsheets Values" doc:id="46787893-b1bc-4284-9a45-0bff51c06af7" spreadsheetId="${gsheets.sheetid}" range="Sheet1!B:D" config-ref="Google_Sheets_Config">
+		</google-sheets:get-spreadsheets-values-by-spreadsheet-id-range>
+		<ee:transform doc:name="Getting DATA from SPREADSHEET" doc:id="abe8c9e9-d22a-468a-9ba1-8640655a62ad">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload.values map{
+	
+    "applicantName": $[0],
+    "contactNumber": $[1],
+    "emailId": $[2]
+    
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="If there is a duplicate entry the data should not be processed and email should be sent" doc:id="a02b1c54-72e6-4e9a-9004-d3342cf625ee" >
+			<when expression='#[((payload.emailId contains (vars.filteredpayload.emailid joinBy  "")) or (payload.contactNumber contains (vars.filteredpayload.phone joinBy  "")) or (payload.applicantName contains (vars.filteredpayload.name joinBy  "")))]'>
+				<email:send doc:name="If repeated entry sending email intimating the same." doc:id="5ca56b56-b98c-4ca3-8d9e-ad6d9fd8fa48" fromAddress="${send1.fromaddress}" subject='#["Duplicate entry detected"]' config-ref="Email_SMTP">
+					<email:to-addresses>
+						<email:to-address value="${send2.toaddress}" />
+					</email:to-addresses>
+					<email:body contentType="text/plain">
+						<email:content><![CDATA[#["Entry already exists for " ++ vars.filteredpayload.name[0] ++ "," ++ vars.filteredpayload.emailid[0] ++ "," ++ vars.filteredpayload.phone[0]]]]></email:content>
+					</email:body>
+				</email:send>
+				<ee:transform doc:name="Custom Response Message" doc:id="39e87fff-7802-48a7-98be-1538676a7912">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"custom-message":"Entry already exists for " ++ vars.filteredpayload.name[0] ++ "," ++ vars.filteredpayload.emailid[0] ++ "," ++ vars.filteredpayload.phone[0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<otherwise>
+				<google-sheets:create-spreadsheets-values-rangeappend-by-spreadsheet-id doc:name="Posting data to Spreadsheets if no duplicate entry detected" doc:id="feb79dcf-f610-494f-9aba-4c29d82b1423" spreadsheetId="${gsheets.sheetid}" range="Sheet1" config-ref="Google_Sheets_Config">
+					<google-sheets:spreadsheets-values-rangeappend-content><![CDATA[#[vars.actualpayload]]]></google-sheets:spreadsheets-values-rangeappend-content>
+				</google-sheets:create-spreadsheets-values-rangeappend-by-spreadsheet-id>
+				<ee:transform doc:name="Output PAYLOAD" doc:id="20cfb16d-f9c5-40d1-9122-99ed4807955b" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+	
+	<flow name="on-newRow-inGoogleSheet-flow" doc:id="3bb5ea19-664a-4494-b4a8-e6b346ac321a" >
+		<google-sheets:new-row-listener spreadsheetId="${gsheets.sheetid}" worksheetName="Sheet1" doc:name="New Row" doc:id="6b85314e-a30d-4248-bec3-119a2af56e1c" config-ref="Google_Sheets_Config">
+			<scheduling-strategy >
+				<fixed-frequency frequency="30000"/>
+			</scheduling-strategy>
+		</google-sheets:new-row-listener>
+		<ee:transform doc:name="Object to Array" doc:id="3e219c3d-afe7-4877-9d74-781885f5bddd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[payload.row]
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="filtering" doc:id="094ae1f7-b1c9-4f01-ac99-0a4ca5f1237b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+       "applicantId": $.applicantId as String,
+        "applicantName": $.applicantName,
+        "contactNumber": $.contactNumber as String,
+		"emailId": $.emailId,
+		"dateOfApplication": $.dateOfApplication,
+		"jobId": $.jobId as String,
+		"applicantType": $.applicantType,
+		"applicationStatus": $.applicationStatus,
+		"onlineTestStatus": $.onlineTestStatus,
+		"onlineTestEvaluation": $.onlineTestEvaluation,
+		"score": $.score as String,
+		"locationPreference1": $.locationPreference1,
+		"locationPreference2": $.locationPreference2,
+		"locationPreference3": $.locationPreference3,
+		"currentLocation": $.currentLocation,
+		"qualification": $.qualification,
+		"collegeName": $.collegeName,
+	    "passOutYear": $.passOutYear as String,
+    	"programmingSkills": $.programmingSkills,
+		"experience": $.experience as String,
+		"designation": $.designation,
+		"expInCC": $.expInCC,
+		"noticePeriod": $.noticePeriod,
+		"openForRelocation": $.openForRelocation,
+		"currentSalary": $.currentSalary as String, 
+		"expectedSalary": $.expectedSalary as String,
+	    "currentRound": $.currentRound,
+		"interviewPanelist": $.interviewPanelist,
+        "comments": $.comments 
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="method" ><![CDATA['POST']]></ee:set-variable>
+				<ee:set-variable variableName="path" ><![CDATA[Mule::p('system.path.timelog.postapplicant')]]></ee:set-variable>
+			</ee:variables>
+		
+</ee:transform>
+		<flow-ref doc:name="Flow Reference" doc:id="2ce79619-d8db-4d7a-be8a-5c8c8dd4cbde" name="salesforce-sys-api-request"/>
+	
+</flow>
+	<flow name="on-updateRow-inGoogleSheet-flow" doc:id="367b4dcc-bb7f-438e-a744-aac5b05671ec" >
+		<google-sheets:updated-row-listener spreadsheetId="${gsheets.sheetid}" worksheetName="Sheet1" doc:name="Updated Row" doc:id="97c38aa5-02bf-4b06-960d-22bd3fd5554a" config-ref="Google_Sheets_Config" includeNewRows="true">
+			<scheduling-strategy>
+				<fixed-frequency frequency="50000" />
+			</scheduling-strategy>
+			<google-sheets:monitored-columns>
+				<google-sheets:monitored-column value="A" />
+				<google-sheets:monitored-column value="B" />
+				<google-sheets:monitored-column value="C" />
+				<google-sheets:monitored-column value="D" />
+				<google-sheets:monitored-column value="E" />
+				<google-sheets:monitored-column value="F" />
+				<google-sheets:monitored-column value="G" />
+				<google-sheets:monitored-column value="H" />
+				<google-sheets:monitored-column value="I" />
+				<google-sheets:monitored-column value="J" />
+				<google-sheets:monitored-column value="K" />
+				<google-sheets:monitored-column value="L" />
+				<google-sheets:monitored-column value="M" />
+				<google-sheets:monitored-column value="N" />
+				<google-sheets:monitored-column value="O" />
+				<google-sheets:monitored-column value="P" />
+				<google-sheets:monitored-column value="Q" />
+				<google-sheets:monitored-column value="R" />
+				<google-sheets:monitored-column value="S" />
+				<google-sheets:monitored-column value="T" />
+				<google-sheets:monitored-column value="U" />
+				<google-sheets:monitored-column value="V" />
+				<google-sheets:monitored-column value="W" />
+				<google-sheets:monitored-column value="X" />
+				<google-sheets:monitored-column value="Y" />
+				<google-sheets:monitored-column value="Z" />
+				<google-sheets:monitored-column value="AA" />
+				<google-sheets:monitored-column value="AB" />
+				<google-sheets:monitored-column value="AC" />
+			</google-sheets:monitored-columns>
+		</google-sheets:updated-row-listener>
+		<ee:transform doc:name="Object to Array" doc:id="d7f292fc-1f55-400c-aed3-6cc837639480" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[payload.row]
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="filtering" doc:id="e5a7a1eb-5e12-423f-ac83-dc403104dba1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+       "applicantId": $.applicantId as String,
+        "applicantName": $.applicantName,
+        "contactNumber": $.contactNumber as String,
+		"emailId": $.emailId,
+		"dateOfApplication": $.dateOfApplication,
+		"jobId": $.jobId as String,
+		"applicantType": $.applicantType,
+		"applicationStatus": $.applicationStatus,
+		"onlineTestStatus": $.onlineTestStatus,
+		"onlineTestEvaluation": $.onlineTestEvaluation,
+		"score": $.score as String,
+		"locationPreference1": $.locationPreference1,
+		"locationPreference2": $.locationPreference2,
+		"locationPreference3": $.locationPreference3,
+		"currentLocation": $.currentLocation,
+		"qualification": $.qualification,
+		"collegeName": $.collegeName,
+	    "passOutYear": $.passOutYear as String,
+    	"programmingSkills": $.programmingSkills,
+		"experience": $.experience as String,
+		"designation": $.designation,
+		"expInCC": $.expInCC,
+		"noticePeriod": $.noticePeriod,
+		"openForRelocation": $.openForRelocation,
+		"currentSalary": $.currentSalary as String, 
+		"expectedSalary": $.expectedSalary as String,
+	    "currentRound": $.currentRound,
+		"interviewPanelist": $.interviewPanelist,
+        "comments": $.comments 
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="path" ><![CDATA[Mule::p('system.path.timelog.applicant')]]></ee:set-variable>
+				<ee:set-variable variableName="method" ><![CDATA['PATCH']]></ee:set-variable>
+				<ee:set-variable variableName="uriParams" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"id": payload.applicantId[0] default {}
+}]]></ee:set-variable>
+			</ee:variables>
+		
+</ee:transform>
+		<flow-ref doc:name="Flow Reference" doc:id="b4fedc65-fc6b-4e38-a956-ed3aa69f37eb" name="salesforce-sys-api-request"/>
+	
+</flow>
+	<flow name="get-details-from-googleSheet-flow" doc:id="e1c04894-0eba-4d37-8eb5-f98251a3a73e" >
+		<google-sheets:get-spreadsheets-values-by-spreadsheet-id-range doc:name="Getting all the values in the sheet" doc:id="378efd6c-1ae8-4c41-a023-97570768a1f0" config-ref="Google_Sheets_Config" spreadsheetId="${gsheets.sheetid}" range="Sheet1"/>
+		<ee:transform doc:name="Output PAYLOAD" doc:id="da75ef16-481c-4767-86c3-cf8408790412" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.values map{
+    "id": $[0],
+    "applicantName": $[1],
+    "dateOfApplication": $[2],
+    "jobId": $[3],
+    "applicantType": $[4],
+    "applicationStatus": $[5],
+    "onlineTestStatus": $[6],
+    "onlineTestEvaluation": $[7],
+    "score": $[8],
+    "locationPreference1": $[9],
+    "locationPreference2": $[10],
+    "locationPreference3": $[11],
+    "contactNumber": $[12],
+    "emailId": $[13],
+    "currentLocation": $[14],
+    "qualification": $[15],
+    "collegeName": $[16],
+    "passOutYear": $[17],
+    "programmingSkills": $[18],
+    "experience": $[19],
+    "designation": $[20],
+    "expInCC": $[21],
+    "noticePeriod": $[22],
+    "openForRelocation": $[23],
+    "currentSalary": $[24],
+    "expectedSalary": $[25],
+    "currentRound": $[26],
+    "interviewPanelist": $[27],
+    "comments": $[28]
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
