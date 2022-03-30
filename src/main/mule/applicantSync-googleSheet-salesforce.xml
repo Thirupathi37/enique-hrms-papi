@@ -31,7 +31,7 @@ payload]]></ee:set-payload>
 				<fixed-frequency frequency="1" timeUnit="MINUTES"/>
 			</scheduling-strategy>
 		</email:listener-imap>
-		<ee:transform doc:name="Reading PAYLOAD STRING to JSON" doc:id="b562afc4-f442-48fb-b0ef-603b1d575bb7" >
+		<ee:transform doc:name="STRING to JSON" doc:id="b562afc4-f442-48fb-b0ef-603b1d575bb7" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
